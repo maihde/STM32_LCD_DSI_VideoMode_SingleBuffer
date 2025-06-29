@@ -65,6 +65,9 @@ static void MPU_Config(void);
 
 /* Private functions ---------------------------------------------------------*/
 
+/* Imported variables ---------------------------------------------------------*/
+extern Lcd_Driver_Type;
+
 /**
   * @brief  Main program
   * @param  None
@@ -109,12 +112,35 @@ int main(void)
   if(BSP_LCD_InitHDMI(0,HDMI_FORMAT_720_576)!= BSP_ERROR_NONE)
 #endif /* (USE_LCD_CTRL_ADV7533 > 0) */
   {
+    uint32_t PixelFormat;
+    uint32_t Width;
+    uint32_t Height;
+    uint32_t Orientation;
+#if (USE_LCD_CTRL_NT35510 > 0)
+    Lcd_Driver_Type = LCD_CTRL_NT35510;
+    PixelFormat = LCD_PIXEL_FORMAT_RGB888;
+    Orientation = LCD_ORIENTATION_LANDSCAPE;
+    Width = 800;
+    Height = 480;
+#elif (USE_LCD_CTRL_OTM8009A > 0)
+    Lcd_Driver_Type = LCD_CTRL_OTM8009A;
+    PixelFormat = LCD_PIXEL_FORMAT_RGB888;
+    Orientation = LCD_ORIENTATION_LANDSCAPE;
+    Width = 800;
+    Height = 480;
+#elif (USE_LCD_CTRL_WAVESHARE_2P8 > 0)
+    Lcd_Driver_Type = LCD_CTRL_WAVESHARE_2P8;
+    PixelFormat = LCD_PIXEL_FORMAT_RGB888;
+    Orientation = LCD_ORIENTATION_PORTRAIT;
+    Width = 480;
+    Height = 640;
+#endif
     /* check KoD LCD panel (Board MB1166 ) */
-    if(BSP_LCD_Init(0, LCD_ORIENTATION_LANDSCAPE) != BSP_ERROR_NONE)
+    if(BSP_LCD_InitEx(0, Orientation, PixelFormat, Width, Height) != BSP_ERROR_NONE)
     {
       Error_Handler();
     }
-  } 
+  }
 
   UTIL_LCD_SetFuncDriver(&LCD_Driver);
   UTIL_LCD_SetLayer(0);
@@ -122,19 +148,26 @@ int main(void)
   /* Get the LCD Width */
   BSP_LCD_GetXSize(0, &LCD_X_Size);
     
-  
+#if (USE_LCD_TEST_VERTICAL > 0)
+  HAL_DSI_PatternGeneratorStart(&hlcd_dsi.Instance, 0, 0);
+#elif (USE_LCD_TEST_HORIZONTAL > 0)
+  HAL_DSI_PatternGeneratorStart(&hlcd_dsi.Instance, 0, 1);
+#else
   /* Display example brief   */
   LCD_BriefDisplay();
+#endif;
   
   /* Infinite loop */
   while (1)
   {
+#if ((USE_LCD_TEST_VERTICAL == 0) && (USE_LCD_TEST_HORIZONTAL == 0))
     CopyBuffer((uint32_t *)Images[ImageIndex ++], (uint32_t *)LCD_FRAME_BUFFER, (LCD_X_Size - 320)/2, 160, 320, 240);
     
     if(ImageIndex >= 2)
     {
       ImageIndex = 0;
     }
+#endif
     
     /* Wait some time before switching to next stage */
     HAL_Delay(2000); 

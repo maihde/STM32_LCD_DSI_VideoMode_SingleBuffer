@@ -36,10 +36,22 @@
 /* Include OTM8009A LCD Driver IC driver code */
 #include "../Components/otm8009a/otm8009a.h"
 
+
+/* Include WAVESHARE Driver IC driver code */
+#include "../Components/waveshare/waveshare.h"
+
 #if (USE_LCD_CTRL_ADV7533 == 1)
 /* Include ADV7533 HDMI Driver IC driver code */
 #include "../Components/adv7533/adv7533.h"
 #endif /* USE_LCD_CTRL_ADV7533 */
+
+typedef enum
+{
+  LCD_CTRL_UNKNOWN,
+  LCD_CTRL_NT35510,
+  LCD_CTRL_OTM8009A,
+  LCD_CTRL_WAVESHARE_2P8
+} LCD_Driver_t;
 
 /** @addtogroup BSP
   * @{

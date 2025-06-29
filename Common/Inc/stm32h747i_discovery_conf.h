@@ -31,9 +31,13 @@
 #define USE_COM_LOG                         1U
 #define USE_BSP_COM_FEATURE                 1U
 /* LCD controllers defines */
-#define USE_LCD_CTRL_OTM8009A               1U
+#define USE_LCD_CTRL_OTM8009A               0U
 #define USE_LCD_CTRL_NT35510                0U
+#define USE_LCD_CTRL_WAVESHARE_2P8          1U
 #define USE_LCD_CTRL_ADV7533                1U
+
+#define USE_LCD_TEST_VERTICAL               0U
+#define USE_LCD_TEST_HORIZONTAL             0U
 
 #define LCD_LAYER_0_ADDRESS                 0xD0000000U
 #define LCD_LAYER_1_ADDRESS                 0xD0200000U
