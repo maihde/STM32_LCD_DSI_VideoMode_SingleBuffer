@@ -141,6 +141,12 @@ int main(void)
     Orientation = LCD_ORIENTATION_LANDSCAPE;
     Width = 800;
     Height = 480;
+#else
+    Lcd_Driver_Type = LCD_CTRL_UNKNOWN;
+    PixelFormat = LCD_PIXEL_FORMAT_RGB888;
+    Orientation = LCD_ORIENTATION_LANDSCAPE;
+    Width = 800;
+    Height = 480;
 #endif
     /* check KoD LCD panel (Board MB1166 ) */
     if(BSP_LCD_InitEx(0, Orientation, PixelFormat, Width, Height) != BSP_ERROR_NONE)
