@@ -196,18 +196,12 @@ int32_t WAVESHARE_DeInit(WAVESHARE_Object_t *pObj)
   */
 int32_t WAVESHARE_ReadID(WAVESHARE_Object_t *pObj, uint32_t *Id)
 { 
-  int32_t ret;
+  int32_t ret = WAVESHARE_OK;
   uint8_t tmp;
   *Id = 0x28;
 
   // Try reading register 0x00 and 0x01
-  /*
-  HAL_I2C_IsDeviceReady(&hbus_i2c4, (uint16_t)WAVESHARE_I2C_ADDRESS<<1, 3, 5);
-  if (ret != HAL_OK) // No ACK Received At That Address
-  {
-    ret = BSP_ERROR_COMPONENT_FAILURE;
-  }
-  */
+
   if(waveshare_read_reg(&pObj->Ctx, 0x00, &tmp, 1) != WAVESHARE_OK)
   {
     ret = WAVESHARE_ERROR;
@@ -216,8 +210,20 @@ int32_t WAVESHARE_ReadID(WAVESHARE_Object_t *pObj, uint32_t *Id)
   {
     ret = WAVESHARE_ERROR;
   }
+  // the rasperry Pi device is also on address 0x45 so if reading it's ID
+  // returns C3 or DE then this is not a waveshare device
+  if(waveshare_read_reg(&pObj->Ctx, 0x80, &tmp, 1) != WAVESHARE_OK)
+  {
+    ret = WAVESHARE_ERROR;
+  }
 
-  ret = WAVESHARE_OK;
+  if ((tmp == 0xCE) || (tmp == 0xDE)) {
+    ret = WAVESHARE_ERROR;
+  }
+
+  if (ret == WAVESHARE_OK) {
+    *Id = 0x28; // this is made up, since we don't know a register to read
+  }
 
   return ret;  
 }  
