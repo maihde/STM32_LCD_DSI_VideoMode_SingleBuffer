@@ -33,8 +33,9 @@
 /* LCD controllers defines */
 #define USE_LCD_CTRL_OTM8009A               0U
 #define USE_LCD_CTRL_NT35510                0U
-#define USE_LCD_CTRL_WAVESHARE_2P8          1U
-#define USE_LCD_CTRL_ADV7533                1U
+#define USE_LCD_CTRL_WAVESHARE_2P8          0U
+#define USE_LCD_CTRL_RASPBERRYPI            1U
+#define USE_LCD_CTRL_ADV7533                0U
 
 #define USE_LCD_TEST_VERTICAL               0U
 #define USE_LCD_TEST_HORIZONTAL             0U

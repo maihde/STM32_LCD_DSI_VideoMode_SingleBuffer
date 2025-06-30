@@ -195,6 +195,16 @@
 			<locationURI>PARENT-2-PROJECT_LOC/Drivers/BSP/Components/otm8009a/otm8009a_reg.c</locationURI>
 		</link>
 		<link>
+			<name>Drivers/BSP/Components/raspberrypi.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/Drivers/BSP/Components/raspberrypi/raspberrypi.c</locationURI>
+		</link>
+		<link>
+			<name>Drivers/BSP/Components/raspberrypi_reg.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/Drivers/BSP/Components/raspberrypi/raspberrypi_reg.c</locationURI>
+		</link>
+		<link>
 			<name>Drivers/BSP/Components/waveshare.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Drivers/BSP/Components/waveshare/waveshare.c</locationURI>

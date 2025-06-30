@@ -181,6 +181,8 @@ static int32_t DSI_IO_Read(uint16_t ChannelNbr, uint16_t Reg, uint8_t *pData, ui
 static int32_t NT35510_Probe(uint32_t ColorCoding, uint32_t Orientation);
 static int32_t OTM8009A_Probe(uint32_t ColorCoding, uint32_t Orientation);
 static int32_t WAVESHARE_2P8_Probe(uint32_t ColorCoding, uint32_t Orientation);
+static int32_t RASPBERRYPI_PreProbe(uint32_t ColorCoding, uint32_t Orientation);
+static int32_t RASPBERRYPI_Probe(uint32_t ColorCoding, uint32_t Orientation);
 
 #if (USE_LCD_CTRL_ADV7533 > 0)
 static int32_t ADV7533_Probe(void);
@@ -318,6 +320,19 @@ int32_t BSP_LCD_InitEx(uint32_t Instance, uint32_t Orientation, uint32_t PixelFo
       }
     }
 
+    if ((Lcd_Driver_Type == LCD_CTRL_UNKNOWN) || (Lcd_Driver_Type == LCD_CTRL_RASPBERRYPI))
+    {
+      if(RASPBERRYPI_PreProbe(ctrl_pixel_format, Orientation) != BSP_ERROR_NONE)
+      {
+	ret = BSP_ERROR_UNKNOWN_COMPONENT;
+      }
+      else
+      {
+	Lcd_Driver_Type = LCD_CTRL_RASPBERRYPI;
+	ret = BSP_ERROR_NONE;
+      }
+    }
+
     // If we get here and it's still not None then
     if(ret != BSP_ERROR_NONE)
     {
@@ -414,6 +429,28 @@ int32_t BSP_LCD_InitEx(uint32_t Instance, uint32_t Orientation, uint32_t PixelFo
 	  }
 	}
 
+	if ((Lcd_Driver_Type == LCD_CTRL_UNKNOWN) || (Lcd_Driver_Type == LCD_CTRL_RASPBERRYPI))
+	{
+	  /* Initialize the LCD_CTRL_RASPBERRYPI LCD Display IC Driver (KoD LCD IC Driver)
+	  depending on configuration of DSI */
+	  if(PixelFormat == LCD_PIXEL_FORMAT_RGB565)
+	  {
+	    ctrl_pixel_format = RASPBERRYPI_FORMAT_RBG565;
+	  }
+	  else /* LCD_PIXEL_FORMAT_RGB888 */
+	  {
+	    ctrl_pixel_format = RASPBERRYPI_FORMAT_RGB888;
+	  }
+	  if(RASPBERRYPI_Probe(ctrl_pixel_format, Orientation) != BSP_ERROR_NONE)
+	  {
+	    ret = BSP_ERROR_UNKNOWN_COMPONENT;
+	  }
+	  else
+	  {
+	    Lcd_Driver_Type = LCD_CTRL_RASPBERRYPI;
+	    ret = BSP_ERROR_NONE;
+	  }
+	}
 
 
       }
@@ -556,6 +593,7 @@ int32_t BSP_LCD_InitHDMI(uint32_t Instance, uint32_t Format)
       hlcd_dsi.Instance = DSI;
       /* Set number of Lanes */
       hlcd_dsi.Init.NumberOfLanes = DSI_TWO_DATA_LANES;
+
       /* Set the TX escape clock division ratio */
       hlcd_dsi.Init.TXEscapeCkdiv = 3U;
       hlcd_dsi.Init.AutomaticClockLaneControl = DSI_AUTO_CLK_LANE_CTRL_DISABLE;
@@ -781,15 +819,25 @@ __weak HAL_StatusTypeDef MX_DSIHOST_DSI_Init(DSI_HandleTypeDef *hdsi, uint32_t W
   hdsi->Instance = DSI;
   hdsi->Init.AutomaticClockLaneControl = DSI_AUTO_CLK_LANE_CTRL_DISABLE;
 
-  hdsi->Init.NumberOfLanes = DSI_TWO_DATA_LANES;
   if (Lcd_Driver_Type == LCD_CTRL_WAVESHARE_2P8) {
     /*
     The lane byte clock is set 125000 Khz
     The pixel clock is set to 50000 Khz
     */
     hdsi->Init.TXEscapeCkdiv = 8;
+    hdsi->Init.NumberOfLanes = DSI_TWO_DATA_LANES;
     PLLInit.PLLNDIV = 120;
     PLLInit.PLLIDF = DSI_PLL_IN_DIV3;
+    PLLInit.PLLODF = DSI_PLL_OUT_DIV1;
+  } else if (Lcd_Driver_Type == LCD_CTRL_RASPBERRYPI) {
+    /*
+    The lane byte clock is set 100000 Khz
+    The pixel clock is set to 30000 Khz
+    */
+    hdsi->Init.TXEscapeCkdiv = 8;
+    hdsi->Init.NumberOfLanes = DSI_ONE_DATA_LANE;
+    PLLInit.PLLNDIV = 32;
+    PLLInit.PLLIDF = DSI_PLL_IN_DIV1;
     PLLInit.PLLODF = DSI_PLL_OUT_DIV1;
   } else {
     /*
@@ -797,6 +845,7 @@ __weak HAL_StatusTypeDef MX_DSIHOST_DSI_Init(DSI_HandleTypeDef *hdsi, uint32_t W
     The pixel clock is set to 27429 Khz
     */
     hdsi->Init.TXEscapeCkdiv = 4;
+    hdsi->Init.NumberOfLanes = DSI_TWO_DATA_LANES;
     PLLInit.PLLNDIV = 100;
     PLLInit.PLLIDF = DSI_PLL_IN_DIV5;
     PLLInit.PLLODF = DSI_PLL_OUT_DIV1;
@@ -847,19 +896,30 @@ __weak HAL_StatusTypeDef MX_DSIHOST_DSI_Init(DSI_HandleTypeDef *hdsi, uint32_t W
     VidCfg.VerticalFrontPorch = OTM8009A_480X800_VFP;
   }
   else if(Lcd_Driver_Type == LCD_CTRL_WAVESHARE_2P8)
-    {
-      VidCfg.HorizontalSyncActive = (WAVESHARE_2P8IN_480X640_HSYNC * 125000U)/50000U;
-      VidCfg.HorizontalBackPorch = (WAVESHARE_2P8IN_480X640_HBP * 125000U)/50000U;
-      VidCfg.HorizontalLine = ((Width + WAVESHARE_2P8IN_480X640_HSYNC + WAVESHARE_2P8IN_480X640_HBP + WAVESHARE_2P8IN_480X640_HFP) * 125000U)/50000U;
-      VidCfg.VerticalSyncActive = WAVESHARE_2P8IN_480X640_VSYNC;
-      VidCfg.VerticalBackPorch = WAVESHARE_2P8IN_480X640_VBP;
-      VidCfg.VerticalFrontPorch = WAVESHARE_2P8IN_480X640_VFP;
-    }
+  {
+    VidCfg.HorizontalSyncActive = (WAVESHARE_2P8IN_480X640_HSYNC * 125000U)/50000U;
+    VidCfg.HorizontalBackPorch = (WAVESHARE_2P8IN_480X640_HBP * 125000U)/50000U;
+    VidCfg.HorizontalLine = ((Width + WAVESHARE_2P8IN_480X640_HSYNC + WAVESHARE_2P8IN_480X640_HBP + WAVESHARE_2P8IN_480X640_HFP) * 125000U)/50000U;
+    VidCfg.VerticalSyncActive = WAVESHARE_2P8IN_480X640_VSYNC;
+    VidCfg.VerticalBackPorch = WAVESHARE_2P8IN_480X640_VBP;
+    VidCfg.VerticalFrontPorch = WAVESHARE_2P8IN_480X640_VFP;
+  }
+  else if(Lcd_Driver_Type == LCD_CTRL_RASPBERRYPI)
+  {
+    VidCfg.HorizontalSyncActive = (RASPBERRYPI_800X480_HSYNC * 125000U)/30000U;
+    VidCfg.HorizontalBackPorch = (RASPBERRYPI_800X480_HBP * 125000U)/30000U;
+    VidCfg.HorizontalLine = ((Width + RASPBERRYPI_800X480_HSYNC + RASPBERRYPI_800X480_HBP + RASPBERRYPI_800X480_HFP) * 125000U)/30000U;
+    VidCfg.VerticalSyncActive = RASPBERRYPI_800X480_VSYNC;
+    VidCfg.VerticalBackPorch = RASPBERRYPI_800X480_VBP;
+    VidCfg.VerticalFrontPorch = RASPBERRYPI_800X480_VFP;
+    VidCfg.HSPolarity = DSI_HSYNC_ACTIVE_LOW;
+    VidCfg.VSPolarity = DSI_VSYNC_ACTIVE_LOW;
+  }
 
   VidCfg.VerticalActive = Height;
   VidCfg.LPCommandEnable = DSI_LP_COMMAND_ENABLE;
 
-  if(Lcd_Driver_Type == LCD_CTRL_NT35510)
+  if((Lcd_Driver_Type == LCD_CTRL_NT35510) ||(Lcd_Driver_Type == LCD_CTRL_RASPBERRYPI))
   {
     VidCfg.LPLargestPacketSize = 64;
     VidCfg.LPVACTLargestPacketSize = 64;
@@ -934,6 +994,19 @@ __weak HAL_StatusTypeDef MX_LTDC_Init(LTDC_HandleTypeDef *hltdc, uint32_t Width,
     hltdc->Init.AccumulatedActiveH = WAVESHARE_2P8IN_480X640_VSYNC + Height + WAVESHARE_2P8IN_480X640_VBP - 1;
     hltdc->Init.TotalHeigh         = WAVESHARE_2P8IN_480X640_VSYNC + Height + WAVESHARE_2P8IN_480X640_VBP + WAVESHARE_2P8IN_480X640_VFP - 1;
   }
+  else if(Lcd_Driver_Type == LCD_CTRL_RASPBERRYPI)
+  {
+    hltdc->Init.HorizontalSync     = RASPBERRYPI_800X480_HSYNC - 1;
+    hltdc->Init.AccumulatedHBP     = RASPBERRYPI_800X480_HSYNC + RASPBERRYPI_800X480_HBP - 1;
+    hltdc->Init.AccumulatedActiveW = RASPBERRYPI_800X480_HSYNC + Width + RASPBERRYPI_800X480_HBP - 1;
+    hltdc->Init.TotalWidth         = RASPBERRYPI_800X480_HSYNC + Width + RASPBERRYPI_800X480_HBP + RASPBERRYPI_800X480_HFP - 1;
+    hltdc->Init.VerticalSync       = RASPBERRYPI_800X480_VSYNC - 1;
+    hltdc->Init.AccumulatedVBP     = RASPBERRYPI_800X480_VSYNC + RASPBERRYPI_800X480_VBP - 1;
+    hltdc->Init.AccumulatedActiveH = RASPBERRYPI_800X480_VSYNC + Height + RASPBERRYPI_800X480_VBP - 1;
+    hltdc->Init.TotalHeigh         = RASPBERRYPI_800X480_VSYNC + Height + RASPBERRYPI_800X480_VBP + RASPBERRYPI_800X480_VFP - 1;
+    hltdc->Init.HSPolarity = LTDC_HSPOLARITY_AH;
+    hltdc->Init.VSPolarity = LTDC_VSPOLARITY_AH;
+  }
 
   hltdc->Init.Backcolor.Blue  = 0x00;
   hltdc->Init.Backcolor.Green = 0x00;
@@ -981,7 +1054,8 @@ __weak HAL_StatusTypeDef MX_LTDC_ClockConfig(LTDC_HandleTypeDef *hltdc)
 {
   RCC_PeriphCLKInitTypeDef  PeriphClkInitStruct;
 
-  if (Lcd_Driver_Type == LCD_CTRL_WAVESHARE_2P8) {
+  if (Lcd_Driver_Type == LCD_CTRL_WAVESHARE_2P8)
+  {
     PeriphClkInitStruct.PeriphClockSelection   = RCC_PERIPHCLK_LTDC;
     PeriphClkInitStruct.PLL3.PLL3M      = 5U;
     PeriphClkInitStruct.PLL3.PLL3N      = 80U;
@@ -990,6 +1064,17 @@ __weak HAL_StatusTypeDef MX_LTDC_ClockConfig(LTDC_HandleTypeDef *hltdc)
     PeriphClkInitStruct.PLL3.PLL3R      = 8U;
     PeriphClkInitStruct.PLL3.PLL3RGE    = RCC_PLL3VCIRANGE_2; // 4 - 8 MHz
     PeriphClkInitStruct.PLL3.PLL3VCOSEL = RCC_PLL3VCOMEDIUM; // 400MHz into DIVR3
+    PeriphClkInitStruct.PLL3.PLL3FRACN  = 0U;
+  } else if (Lcd_Driver_Type == LCD_CTRL_RASPBERRYPI)
+  {
+    PeriphClkInitStruct.PeriphClockSelection   = RCC_PERIPHCLK_LTDC;
+    PeriphClkInitStruct.PLL3.PLL3M      = 5U;
+    PeriphClkInitStruct.PLL3.PLL3N      = 96U;
+    PeriphClkInitStruct.PLL3.PLL3P      = 2U;
+    PeriphClkInitStruct.PLL3.PLL3Q      = 2U;
+    PeriphClkInitStruct.PLL3.PLL3R      = 16U;
+    PeriphClkInitStruct.PLL3.PLL3RGE    = RCC_PLL3VCIRANGE_2; // 4 - 8 MHz
+    PeriphClkInitStruct.PLL3.PLL3VCOSEL = RCC_PLL3VCOWIDE; // 480MHz into DIVR3
     PeriphClkInitStruct.PLL3.PLL3FRACN  = 0U;
   } else {
     PeriphClkInitStruct.PeriphClockSelection   = RCC_PERIPHCLK_LTDC;
@@ -2348,6 +2433,105 @@ static int32_t WAVESHARE_2P8_Probe(uint32_t ColorCoding, uint32_t Orientation)
     {
       Lcd_Drv = (LCD_Drv_t *)(void *) &WAVESHARE_LCD_Driver;
       if(Lcd_Drv->Init(Lcd_CompObj, ColorCoding, Orientation) != WAVESHARE_OK)
+      {
+	ret = BSP_ERROR_COMPONENT_FAILURE;
+      }
+      else
+      {
+	ret = BSP_ERROR_NONE;
+      }
+    }
+  }
+
+  return ret;
+}
+
+static int32_t RASPBERRYPI_PreProbe(uint32_t ColorCoding, uint32_t Orientation)
+{
+  int32_t ret;
+  uint32_t id = 0;
+  RASPBERRYPI_IO_t               IOCtx;
+  static RASPBERRYPI_Object_t    RASPBERRYPIObj;
+
+  IOCtx.Address     = RASPBERRYPI_I2C_ADDR;
+  IOCtx.Init        = BSP_I2C4_Init;
+  IOCtx.DeInit      = BSP_I2C4_DeInit;
+  IOCtx.ReadI2CReg  = BSP_I2C4_ReadReg;
+  IOCtx.WriteI2CReg = BSP_I2C4_WriteReg;
+  IOCtx.ReadDSIReg  = DSI_IO_Read;
+  IOCtx.WriteDSIReg = DSI_IO_Write;
+  IOCtx.GetTick     = BSP_GetTick;
+
+  if(RASPBERRYPI_RegisterBusIO(&RASPBERRYPIObj, &IOCtx) != RASPBERRYPI_OK)
+  {
+    ret = BSP_ERROR_BUS_FAILURE;
+  }
+  else
+  {
+    Lcd_CompObj = &RASPBERRYPIObj;
+
+    if(RASPBERRYPI_ReadID(Lcd_CompObj, &id) != RASPBERRYPI_OK)
+    {
+      ret = BSP_ERROR_COMPONENT_FAILURE;
+    }
+    else if (id != RASPBERRYPI_VER2_ID)
+    {
+      ret = BSP_ERROR_UNKNOWN_COMPONENT;
+    }
+    else
+    {
+      Lcd_Drv = (LCD_Drv_t *)(void *) &RASPBERRYPI_LCD_Driver;
+      if(RASPBERRYPI_PreInit(Lcd_CompObj, ColorCoding, Orientation) != RASPBERRYPI_OK)
+      {
+	ret = BSP_ERROR_COMPONENT_FAILURE;
+      }
+      else
+      {
+	ret = BSP_ERROR_NONE;
+      }
+    }
+  }
+
+  return ret;
+}
+
+
+static int32_t RASPBERRYPI_Probe(uint32_t ColorCoding, uint32_t Orientation)
+{
+  int32_t ret;
+  uint32_t id = 0;
+  RASPBERRYPI_IO_t               IOCtx;
+  static RASPBERRYPI_Object_t    RASPBERRYPIObj;
+
+  IOCtx.Address     = RASPBERRYPI_I2C_ADDR;
+  IOCtx.Init        = BSP_I2C4_Init;
+  IOCtx.DeInit      = BSP_I2C4_DeInit;
+  IOCtx.ReadI2CReg  = BSP_I2C4_ReadReg;
+  IOCtx.WriteI2CReg = BSP_I2C4_WriteReg;
+  IOCtx.ReadDSIReg  = DSI_IO_Read;
+  IOCtx.WriteDSIReg = DSI_IO_Write;
+  IOCtx.GetTick     = BSP_GetTick;
+
+  if(RASPBERRYPI_RegisterBusIO(&RASPBERRYPIObj, &IOCtx) != RASPBERRYPI_OK)
+  {
+    ret = BSP_ERROR_BUS_FAILURE;
+  }
+  else
+  {
+    Lcd_CompObj = &RASPBERRYPIObj;
+
+    if(RASPBERRYPI_ReadID(Lcd_CompObj, &id) != RASPBERRYPI_OK)
+    {
+      ret = BSP_ERROR_COMPONENT_FAILURE;
+    }
+    else if (id != RASPBERRYPI_VER2_ID)
+    {
+      ret = BSP_ERROR_UNKNOWN_COMPONENT;
+    }
+    else
+    {
+      Lcd_Drv = (LCD_Drv_t *)(void *) &RASPBERRYPI_LCD_Driver;
+      if(Lcd_Drv->Init(Lcd_CompObj, ColorCoding, Orientation) != RASPBERRYPI_OK)
       {
 	ret = BSP_ERROR_COMPONENT_FAILURE;
       }

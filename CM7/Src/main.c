@@ -103,6 +103,7 @@ int main(void)
      HSEM notification or by any D2 wakeup source (SEV,EXTI..)   */  
 	 
   /* Initialize used Leds */
+  BSP_LED_Init(LED2);
   BSP_LED_Init(LED3);
 
    /* Initialize the LCD   */
@@ -134,6 +135,12 @@ int main(void)
     Orientation = LCD_ORIENTATION_PORTRAIT;
     Width = 480;
     Height = 640;
+#elif (USE_LCD_CTRL_RASPBERRYPI > 0)
+    Lcd_Driver_Type = LCD_CTRL_RASPBERRYPI;
+    PixelFormat = LCD_PIXEL_FORMAT_RGB888;
+    Orientation = LCD_ORIENTATION_LANDSCAPE;
+    Width = 800;
+    Height = 480;
 #endif
     /* check KoD LCD panel (Board MB1166 ) */
     if(BSP_LCD_InitEx(0, Orientation, PixelFormat, Width, Height) != BSP_ERROR_NONE)
@@ -170,7 +177,8 @@ int main(void)
 #endif
     
     /* Wait some time before switching to next stage */
-    HAL_Delay(2000); 
+    HAL_Delay(2000);
+    BSP_LED_Toggle(LED2);
   }
 }
 
