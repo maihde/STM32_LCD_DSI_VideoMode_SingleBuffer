@@ -188,7 +188,8 @@ int main(void)
 
     /* Some Raspberry Pi Displays will go to sleep if they don't get I2C traffic */
     if (Lcd_Driver_Type == LCD_CTRL_RASPBERRYPI) {
-      BSP_LCD_SetBrightness(0, 100);
+      uint32_t tmpb;
+      BSP_LCD_GetBrightness(0, &tmpb);
     }
   }
 }

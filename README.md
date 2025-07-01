@@ -48,7 +48,7 @@ Displays Tested
 "Raspberry PI" (i.e. tc358762 compatible bridges with a ATTINY controling power, backlight, and display setup):
 
 - OK: The official [RaspberryPi 7" display](https://www.amazon.com/Raspberry-Pi-Official-Touch-Screen/dp/B073S3LQ6Q)
-- Generally OK (Powers off randomly): [Hosyond 5" display](https://www.amazon.com/Hosyond-Touchscreen-Compatible-Capacitive-Driver-Free/dp/B0CXTFN8K9)
+- OK: [Hosyond 5" display](https://www.amazon.com/Hosyond-Touchscreen-Compatible-Capacitive-Driver-Free/dp/B0CXTFN8K9)
 - NOT OKAY: [OSOYOO 3.5" display](https://www.amazon.com/dp/B0DQD3RFCT)
 
 Other Raspberry Pi Displays:
