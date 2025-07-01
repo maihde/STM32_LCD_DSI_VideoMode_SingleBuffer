@@ -834,7 +834,7 @@ __weak HAL_StatusTypeDef MX_DSIHOST_DSI_Init(DSI_HandleTypeDef *hdsi, uint32_t W
     The lane byte clock is set 100000 Khz
     The pixel clock is set to 30000 Khz
     */
-    hdsi->Init.TXEscapeCkdiv = 8;
+    hdsi->Init.TXEscapeCkdiv = 10;
     hdsi->Init.NumberOfLanes = DSI_ONE_DATA_LANE;
     PLLInit.PLLNDIV = 32;
     PLLInit.PLLIDF = DSI_PLL_IN_DIV1;
