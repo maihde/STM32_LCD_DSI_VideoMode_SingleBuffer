@@ -547,7 +547,21 @@ int32_t RASPBERRYPI_SetBrightness(RASPBERRYPI_Object_t *pObj, uint32_t Brightnes
   */
 int32_t RASPBERRYPI_GetBrightness(RASPBERRYPI_Object_t *pObj, uint32_t *Brightness)
 {
-  *Brightness = RASPBERRYPICtx.Brightness;
+  int32_t ret;
+  uint8_t tmp;
+  ret = raspberrypi_read_i2c_reg(&pObj->Ctx, RASPBERRYPI_REG_PWM, &tmp, 1);
+
+  if(ret != RASPBERRYPI_OK)
+  {
+    ret = RASPBERRYPI_ERROR;
+    *Brightness = RASPBERRYPICtx.Brightness; // Use the stored brightness
+  }
+  else
+  {
+    RASPBERRYPICtx.Brightness = ((uint32_t)tmp * 100U)/255U;
+    *Brightness = RASPBERRYPICtx.Brightness;
+  }
+
   return RASPBERRYPI_OK;  
 }
 
