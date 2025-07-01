@@ -185,6 +185,11 @@ int main(void)
     /* Wait some time before switching to next stage */
     HAL_Delay(2000);
     BSP_LED_Toggle(LED2);
+
+    /* Some Raspberry Pi Displays will go to sleep if they don't get I2C traffic */
+    if (Lcd_Driver_Type == LCD_CTRL_RASPBERRYPI) {
+      BSP_LCD_SetBrightness(0, 100);
+    }
   }
 }
 
